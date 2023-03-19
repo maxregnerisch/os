@@ -75,21 +75,18 @@ build () {
 # MOVE OUTPUT TO BUILDS DIR #
 #---------------------------#
 "
+# update isolinux configuration file
+sed -i 's/Ubuntu/mROS/g' $ISO_DIR/isolinux/txt.cfg
+sed -i "s#file=/cdrom/preseed/ubuntu.seed#file=/cdrom/preseed/mros.seed#g" $ISO_DIR/isolinux/txt.cfg
 
-  YYYYMMDD="$(date +%Y%m%d)"
-  OUTPUT_DIR="$BASE_DIR/builds/$BUILD_ARCH"
-  mkdir -p "$OUTPUT_DIR"
-  FNAME="VanillaOS-$VERSION-$CHANNEL.$YYYYMMDD$OUTPUT_SUFFIX"
-  mv "$BASE_DIR/tmp/$BUILD_ARCH/live-image-$BUILD_ARCH.hybrid.iso" "$OUTPUT_DIR/${FNAME}.iso"
+# create new ISO image
+genisoimage -D -r -V "mROS" -cache-inodes -J -l -b isolinux/isolinux.bin -c isolinux/boot.cat -no-emul-boot -boot-load-size 4 -boot-info-table -o $ISO_NAME $ISO_DIR
 
-  # cd into output to so {FNAME}.sha256.txt only
-  # includes the filename and not the path to
-  # our file.
-  cd $OUTPUT_DIR
-  md5sum "${FNAME}.iso" > "${FNAME}.md5.txt"
-  sha256sum "${FNAME}.iso" > "${FNAME}.sha256.txt"
-  cd $BASE_DIR
-}
+# copy live ISO and kernel to build directory
+cp $ISO_DIR/casper/filesystem.squashfs $BUILD_DIR/casper/filesystem.squashfs
+cp $ISO_DIR/casper/vmlinuz $BUILD_DIR/casper/vmlinuz
+
+echo "Build complete!"
 
 if [[ "$ARCH" == "all" ]]; then
     build amd64
